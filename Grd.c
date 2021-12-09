@@ -6,8 +6,8 @@ PCB                 : RKlimat2021
 Clock frequency     : 4,000000 MHz
 
 *****************************************************/ 
-#define GRD_001    // ГРД-1 сушильная камера с увл. DS18B20 + AM2301                  Program size: 4022 words (8044 bytes), 98,2% of FLASH [0х27BD] EEPROM [0х0530] 23.11.2021
-//#define GRD_002    // ГРД-1 сушильная камера с увл. DS18B20 + AM2301 + ЕЛЕКТРОСТАТИКА Program size: 3499 words (6998 bytes), 85,4% of FLASH [43FA] EEPROM [0549] 25.03.2021
+//#define GRD_001    // ГРД-1 сушильная камера с увл. DS18B20 + AM2301                  Program size: 4022 words (8044 bytes), 98,2% of FLASH [0х27BD] EEPROM [0х0530] 23.11.2021
+#define GRD_002    // ГРД-1 сушильная камера с увл. DS18B20 + AM2301 + ЕЛЕКТРОСТАТИКА Program size: 3499 words (6998 bytes), 85,4% of FLASH [43FA] EEPROM [0549] 25.03.2021
 
 #include "brend.h"
 #include <mega8.h>
@@ -157,21 +157,19 @@ interrupt [TIM0_OVF] void timer0_ovf_isr(void)
 #ifdef ELECTROSTAT
 // Timer 1 output compare A interrupt service routine
 interrupt [TIM1_COMPA] void timer1_compa_isr(void){
-  CN4 = ONmosfet;
+  CN3 = ONmosfet;
 }
 // Timer 1 output compare B interrupt service routine
 interrupt [TIM1_COMPB] void timer1_compb_isr(void){
-  CN4 = OFFmosfet;
+  CN3 = OFFmosfet;
 }
 #endif
 // Timer 2 overflow interrupt service routine
 interrupt [TIM2_OVF] void timer2_ovf_isr(void)  // (5,0 mS)
 {
   TCNT2 = PRESET2; ++counter; ++counter1; ++counter2;
-#ifndef ELECTROSTAT
   if (pwTriac0) --pwTriac0;
   else CN4 = OFF;                    // отключить канал 4 (SSR-25DA)
-#endif
 }
 #ifdef KTY84
  #include "adc_proc.c"
@@ -193,8 +191,8 @@ while (1)
   {
     if(counter > 200) {counter=0; Check = 1;}  // 1 sec.
     if(counter2 > waitkey) {counter2=0; byte=checkkey();};
-    if(Heat) 
-     {
+#ifndef ELECTROSTAT
+    if(Heat){
       if(counter1>49)
        {
         counter1=0; 
@@ -207,6 +205,7 @@ while (1)
        }
      }
     else CN3 = OFF;
+#endif
     if(mode) display_setup();  // режим установок
 //------- Начало проверки каждую 1 сек. --------------------------------------------------
     if(Check)  
@@ -295,12 +294,10 @@ while (1)
          else byte = OFF;
          if(pvT[1]<199 && ds18b20>1) InsideHeatON = Relay((int)spT2[Step] - pvT[1], 0); // температура среды
          if(InsideHeatON == OFF) {byte = OFF; pwTriac0 = 0;}
-#ifndef ELECTROSTAT
          else {
            pwTriac0 = UpdatePID();                          // нагреватель 
            if(pwTriac0) CN4 = ON;
          }
-#endif
          if(timerElst[1]==0){
              switch (byte)// --------- НАГРЕВАТЕЛЬ -------------------------------------
               {

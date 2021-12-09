@@ -6,6 +6,7 @@ unsigned char x=2;
  return x;
 }
 
+#ifndef ELECTROSTAT
 unsigned char humidifier()
 {
  unsigned char val;
@@ -21,8 +22,8 @@ unsigned char humidifier()
   if(pvT[0]<HumMin) val=OFF;        // запрет увлажнения при низких температурах
   return val;
 }
+#endif
 
-#ifndef ELECTROSTAT
 unsigned char UpdatePID(void)
 {
  signed int err;
@@ -44,4 +45,4 @@ unsigned char UpdatePID(void)
   return err;
 };
 
-#endif
+

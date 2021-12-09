@@ -62,8 +62,10 @@ unsigned char checkkey(void)
                  case 17: buf=OvHeat; break;         // П01 максимально допустимое отклонение температуры
                  case 18: buf=Hyst; break;           // П02 гистерезис терморегулятора
                  case 19: buf=DimTmr; break;         // П03 Размерность таймера: 0 - секунды(c); 1 - минуты(n); 2 - часы(h)
+#ifndef ELECTROSTAT
                  case 20: buf=Humid[0]; break;       // П04 Время отключения увлажнителя 1ед. = 0,25 сек. (40ед. = 10 сек.)
                  case 21: buf=Humid[1]; break;       // П05 Время включения увлажнителя 1ед. = 0,25 сек. (4ед. = 1 сек.)
+#endif
                  case 22: buf=timeCool[Step]; break; // П06 Время продувки в минутах.
                  case 23: buf=maxSP; break;          // П07 Ограничение максимальной температуры.
                  case 24: buf=HumMin; break;         // П08 для GRD_001 - температура с которой начинается увлажнение
@@ -153,8 +155,10 @@ void saveset(void)
     case 17: if(buf>maxSP/4) buf=maxSP/4; else if(buf<0) buf=0; OvHeat = buf; break;// П1-максимально допустимое отклонение температуры 
     case 18: if(buf>maxSP/8) buf=maxSP/8; else if(buf<0) buf=0; Hyst = buf; break;  // П2-гистерезис терморегулятора
     case 19: if(buf>2) buf=2; else if(buf<0) buf=0; DimTmr = buf; break;            // П3-Размерность таймера
+#ifndef ELECTROSTAT
     case 20: if(buf>240) buf=240; else if(buf<0) buf=0; Humid[0] = buf; break;      // П4-Время отключения увлажнителя
     case 21: if(buf>240) buf=240; else if(buf<0) buf=0; Humid[1] = buf; break;      // П5-Время включения увлажнителя
+#endif
     case 22: if(buf>99) buf=99; else if(buf<0) buf=0; timeCool[Step] = buf; break;  // П6-Время продувки в минутах.
     case 23: if(buf>130) buf=130; else if(buf<0) buf=0; maxSP = buf; break;         // П7-Ограничение максимальной температуры.
     case 24: HumMin = buf&0x7F; break;                                              // П8 для GRD_001 - температура с которой начинается увлажнени

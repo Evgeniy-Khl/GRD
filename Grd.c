@@ -6,8 +6,8 @@ PCB                 : RKlimat2021
 Clock frequency     : 4,000000 MHz
 
 *****************************************************/ 
-//#define GRD_001    // √–ƒ-1 сушильна€ камера с увл. DS18B20 + AM2301                  Program size: 4022 words (8044 bytes), 98,2% of FLASH [0х27BD] EEPROM [0х0530] 23.11.2021
-#define GRD_002    // √–ƒ-1 сушильна€ камера с увл. DS18B20 + AM2301 + ≈Ћ≈ “–ќ—“ј“» ј Program size: 3499 words (6998 bytes), 85,4% of FLASH [43FA] EEPROM [0549] 25.03.2021
+#define GRD_001    // √–ƒ-1 сушильна€ камера с увл. DS18B20 + AM2301                  Program size: 4022 words (8044 bytes), 98,2% of FLASH [0х27BD] EEPROM [0х0530] 23.11.2021
+//#define GRD_002    // √–ƒ-1 сушильна€ камера с увл. DS18B20 + AM2301 + ≈Ћ≈ “–ќ—“ј“» ј Program size: 3499 words (6998 bytes), 85,4% of FLASH [43FA] EEPROM [0549] 25.03.2021
 
 #include "brend.h"
 #include <mega8.h>

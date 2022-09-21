@@ -6,8 +6,7 @@ PCB                 : RKlimat2021
 Clock frequency     : 4,000000 MHz
 
 *****************************************************/ 
-//#define GRD_001    // ГРД-1 сушильная камера DS18B20 + AM2301 + УВЛАЖНИТЕЛЬ: Program size: 4007 words (8014 bytes), 97,8% of FLASH [0x0AA2] EEPROM [0х0557] 04.04.2022
-#define GRD_002    // ГРД-1 сушильная камера DS18B20 + AM2301 + ЕЛЕКТРОСТАТИКА: Program size: 4060 words (8120 bytes), 99,1% of FLASH [0x6549] EEPROM [0x0782] 09.08.2022
+#define GRD_001    // ГРД-1 сушильная камера с увл. DS18B20 + AM2301 + ЕЛЕКТРОСТАТИКА  Program size: 4022 words (8044 bytes), 98,2% of FLASH [0х27BD] EEPROM [0х0530] 23.11.2021
 
 #include "brend.h"
 #include <mega8.h>
@@ -80,11 +79,8 @@ unsigned char countled, led=1, counter, counter1, counter2, keydata, mode;
 unsigned char displ, ds18b20, waitmode, waitkey=WAITCOUNT, counthum, BeepT, lock, InsideHeatON, errors, maxUser, maxOwner;
 unsigned char displ_buffer[6]={FIRSTBR,SECONDBR,THERDBR,Pct,Pct,Pct}, familycode[3][9], wait[3], waitStart;
 signed char countsec, countmin;
-signed int pvT[3]={199,199,199}, pvT0, buf;
-#ifdef ELECTROSTAT
- signed int pvTimer, wsElstat;
-#endif
- unsigned char pwTriac0;
+signed int pvT[3]={199,199,199}, pvT0, buf, pvTimer, wsElstat;
+unsigned char pwTriac0, pwElStat;
 
 //--- union declaration
   union 
@@ -103,32 +99,28 @@ eeprom signed int spT2[4]={50,71,72,73};              // Уставка температуры сре
 eeprom signed int spT3[4]={40,61,62,63};              // Уставка температуры влажного датчика KTY84
 eeprom unsigned int SpTmr[4]={0,05,06,30};            // Продолжительность операции
 eeprom unsigned char timeCool[4]={0,0,2,3};           // Длительность продувки
-#ifdef ELECTROSTAT
-  eeprom signed int maxSP[4]={35,130,130,130};        // Ограничитель максимальной температуры
-#else
-  eeprom signed int maxSP[4]={130,130,130,130};       // Ограничитель максимальной температуры
-#endif
+eeprom signed int maxSP=130;                          // Ограничение по максимальной температуре
 eeprom unsigned char OvHeat=8,Hyst=5,Step=0;          // Тревога; Гистерезис; Шаг программы;
 eeprom unsigned char Program=0, LastProg=1;           // Выполняемая программа, прошлая программа;
 eeprom unsigned int Timer=0;                          // Таймер - текущее время операции
 eeprom unsigned char DimTmr=1;                        // Размерность таймера
 eeprom unsigned char Dim=0;                           // 
-eeprom unsigned char koff[2]={10,500};                // [0]-cof->K; [1]-cof->Ti
-eeprom unsigned char reverse=1;                       // инверсия реле нагрева
+eeprom unsigned char Humid[2]={40,0};                 // Длительность паузы / впрыска
+eeprom unsigned char HumMin=60;                       // температура с которой начинается увлажнени
 eeprom unsigned char Priority=0;                      // приоритет датчиков
-eeprom unsigned char coolMax=40;                      // температура с которой ЗАПРЕЩЕНО включение охлаждения
 #ifdef KTY84
  eeprom signed char rider[2]={20,-10};                // коррекция датчиков температуры Bias=rider[0], koff=rider[1];
 #else
  eeprom signed char rider[2]={0,0};                   // коррекция датчиков температуры Bias=rider[0], koff=rider[1];
 #endif
 #ifdef ELECTROSTAT
- eeprom unsigned int ocra1=250;                       // Clock value: 62500 kHz / 250 Hz = 250 = ocra1
- eeprom unsigned int ocrb1=50;                        // Заполнение 50% ocra1 / 2 = 125 = ocrb1
- eeprom unsigned int timerMain[3]={10,20,30};         // таймеры электростатики ([0]-задержка; [1]-работа; [2]-пауза;)
+ eeprom unsigned int ocra1=3125;                      // Clock value: 62500 kHz / 200 Hz = 312,5 = ocra1
+ eeprom unsigned int ocrb1=156;                       // Заполнение 50% ocra1 / 2 = 156 = ocrb1
+ eeprom unsigned int timerElst[3]={10,20,30};         // таймеры электростатики ([0]-задержка; [1]-работа; [2]-пауза;)
 #else
- eeprom unsigned char humidMin=60;                    // температура с которой начинается увлажнени 
- eeprom unsigned char timerHum[2]={40,0};             // Длительность [0]-паузы / [1]-впрыска увлажнителя
+ eeprom unsigned int ocra1=10;                        // cof->K
+ eeprom unsigned int ocrb1=500;                       // cof->Ti
+ eeprom unsigned int timerElst[3]={0,1,0};            // таймеры электростатики ([0]-неиспользуется; [1]-инверсия реле нагрева; [2]-неиспользуется;)
 #endif
 
 eeprom unsigned char numPrg = 3;                      // количество доступных программ
@@ -141,6 +133,7 @@ bit Cooling;
 bit KeyDown;
 bit Sensor;
 bit ElStat;
+bit ModeElS;      // режим прибора Электростатика
 
 // Timer 0 overflow interrupt service routine
 interrupt [TIM0_OVF] void timer0_ovf_isr(void)
@@ -158,7 +151,7 @@ interrupt [TIM0_OVF] void timer0_ovf_isr(void)
   if (!KEYPAD_PIN) {keydata = countled; KeyDown=1;} // если нажата кнопка то ...
   if (++countled == 6) {if(!KeyDown){keydata = 6;} KeyDown=0; countled=0; led=1;}// новый цикл
 }
-#ifdef ELECTROSTAT
+
 // Timer 1 output compare A interrupt service routine
 interrupt [TIM1_COMPA] void timer1_compa_isr(void){
   CN3 = ONmosfet;
@@ -167,13 +160,16 @@ interrupt [TIM1_COMPA] void timer1_compa_isr(void){
 interrupt [TIM1_COMPB] void timer1_compb_isr(void){
   CN3 = OFFmosfet;
 }
-#endif
+
 // Timer 2 overflow interrupt service routine
 interrupt [TIM2_OVF] void timer2_ovf_isr(void)  // (5,0 mS)
 {
   TCNT2 = PRESET2; ++counter; ++counter1; ++counter2;
-  if (pwTriac0) --pwTriac0;
-  else CN4 = OFF;                    // отключить канал 4 (SSR-25DA)
+  if(ModeElS){
+      if (pwElStat) --pwElStat;
+      else CN3 = OFFmosfet;                    // отключить канал 3 (SSR-25DA)
+  }
+
 }
 #ifdef KTY84
  #include "adc_proc.c"
@@ -182,11 +178,7 @@ interrupt [TIM2_OVF] void timer2_ovf_isr(void)  // (5,0 mS)
 #endif
 #include "proc.c"
 #include "displ.c"
-#ifdef ELECTROSTAT
- #include "keypad2.c"
-#else
- #include "keypad1.c"
-#endif
+#include "keypad.c"
 #include "pi.c"
 
 void main(void)
@@ -199,23 +191,24 @@ while (1)
   {
     if(counter > 200) {counter=0; Check = 1;}  // 1 sec.
     if(counter2 > waitkey) {counter2=0; byte=checkkey();};
-#ifndef ELECTROSTAT
-// ----------------- УВЛАЖНИТЕЛЬ -------------------------------------
-    if(Heat){
-      if(counter1>49){
+    if(Heat) 
+     {
+      if(counter1>49)
+       {
         counter1=0; 
         byte=humidifier();
-        switch (byte){
+        switch (byte)// --------- УВЛАЖНИТЕЛЬ -------------------------------------
+          {
            case ON:  CN3 = ON;  break;
            case OFF: CN3 = OFF; break;
-        }; 
-      }
+          }; 
+       }
      }
     else CN3 = OFF;
-#endif
     if(mode) display_setup();  // режим установок
 //------- Начало проверки каждую 1 сек. --------------------------------------------------
-    if(Check){
+    if(Check)  
+     {
       #asm("wdr")
       Check = 0;
       if(waitmode) {if(--waitmode==0) {if (SetUp) saveset(); else displ=0;};};
@@ -252,15 +245,19 @@ while (1)
          }
       };
 #endif       
-//--------------------------------------------------- НАГРЕВ ВКЛЮЧЕН ----------------------------------------------------------------------------                       
-      if(Heat){
-         if(errors) BeepT=120;  // Ошибка датчиков
-         if(ToInsideHeat){      // если завершение программы по температуре продукта.          
+//----- НАГРЕВ ВКЛЮЧЕН -----------------------------------------------------------------------------------------                       
+      if(Heat)        // нагрев
+       {
+         if(errors) BeepT=120; // Ошибка датчиков
+         if(ToInsideHeat)// если отсчет по температуре продукта.
+          {
             if(++countsec>59){countsec=0; Timer++; if(Timer==1) Dim=1;}
             if(InsideHeatON==OFF){Heat=OFF; if(timeCool[Step])Cooling=ON; Timer=timeCool[Step]; BeepT=255; countsec=0;}// окончание приготовления среды
-         }
-         else if(--countsec<0){  // если завершение программы по таймеру
-           switch (Dim){
+          }
+         else if(--countsec<0)// если отсчет по таймеру
+          {
+           switch (Dim)
+            {
               case 2:      // часы
                {
                  countsec=59; displ=0;
@@ -273,59 +270,55 @@ while (1)
                  if(Timer>2) Timer--; else {Timer=0; Dim=0;}
                }; break;
               case 0: Heat=OFF; if(timeCool[Step]){Cooling=ON; Timer=timeCool[Step];} else if(Program==0) lock=30;  BeepT=255; countsec=0; break;
-           }; 
-         }
+            }; 
+          }
          byte = (int)spT1[Step] - pvT[0] + OvHeat;     // величина ошибки регулирования
          if(byte<0) BeepT=255;                         // ПЕРЕГРЕВ
-#ifdef ELECTROSTAT
-         if(Step==0){if(wsElstat) wsElstat--; else electrostat();}
-         else {TIMSK&=0xEF;}
-#endif
-         // ----------------------------------------НАГРЕВАТЕЛЬ / ОХЛАДИТЕЛЬ -------------------------------------
-         //------ работает как нагреватель
-         if(pvT[0]<199 && pvT[0]>1) byte = Relay((int)spT1[Step] - pvT[0], Hyst);  // температура воздуха
-         else if(ds18b20>1 && pvT[1]<199){// если датчик потерян то опираемся на температура среды
-           byte = Relay((int)spT2[Step] - pvT[1], Hyst);
+         if(ModeElS){if(wsElstat) wsElstat--; else if(ocra1<1300) electrostat();}
+         if(pvT[0]<199){
+           if(timerElst[1]){
+             byte = Relay((int)pvT[0] - spT1[Step], Hyst);  // охладитель
+             switch (byte)// --------- ОХЛАДИТЕЛЬ -------------------------------------
+                {
+                  case ON:  CN1 = ON;  break;
+                  case OFF: CN1 = OFF; break;
+                };
+             byte = OFF;
+           }
+           else  byte = Relay((int)spT1[Step] - pvT[0], Hyst);  // нагреватель
          }
+         else if(ds18b20>1){if(pvT[1]<199) byte = Relay((int)spT2[Step] - pvT[1], Hyst); else byte = OFF;}// если датчик потерян то опираемся на температура среды
          else byte = OFF;
-         if(ds18b20>1 && pvT[1]<199) InsideHeatON = Relay((int)spT2[Step] - pvT[1], 0); // температура среды
-         if(InsideHeatON == OFF) byte = OFF;   // если работает как нагреватель то отключаем !!!
-         else {
-           pwTriac0 = UpdatePID();             // ПИД нагреватель 
-           if(pwTriac0) CN4 = ON;
+         if(pvT[1]<199 && ds18b20>1) InsideHeatON = Relay((int)spT2[Step] - pvT[1], 0); // температура среды
+         if(InsideHeatON == OFF) {byte = OFF; pwTriac0 = 0;}
+         else if(ModeElS) {
+           pwElStat = UpdatePID();                          // // режим прибора Электростатика 
+           if(pwElStat) CN3 = ONmosfet;
          }
-         //------ работает как охладитель
-         if(reverse){  
-             byte = Relay((int)pvT[0] - spT1[Step], Hyst);
-             if(pvT[0] > coolMax) byte = OFF;
+         if(timerElst[1]==0){
+             switch (byte)// --------- НАГРЕВАТЕЛЬ -------------------------------------
+              {
+                case ON:  CN1 = ON;  break;
+                case OFF: CN1 = OFF; break;
+              };
          }
-         switch (byte){
-           case ON:  CN1 = ON;  break;
-           case OFF: CN1 = OFF; break;
-         }
-         CN2 = ON;    // таймер включен 
-      }
+         CN2 = ON;    // таймер включен
+       }
 //---- ПРОДУВКА -----------------------------------------------------------------------------------------------
-      else if(Cooling){// продувка
-         CN1 = OFF; CN2 = ON; ElStat = OFF;
-#ifdef ELECTROSTAT
-         TIMSK&=0xEF; // Compare A: Off; Compare B: On
-#endif
-         if(--countsec<0){
+      else if(Cooling)// продувка
+       {
+         CN1 = OFF; CN2 = ON; ElStat = OFFmosfet; TIMSK=0x49; // Compare A: Off;
+         if(--countsec<0)
+          {
             countsec=59; displ=0; 
             if(Timer) Timer--;
             else if(Program) nextPrg();
             else {Cooling=OFF; Step=0; countsec=0; lock=30;}
-         }
-      }
+          }
+       }
       else if(Program && waitStart==0) nextPrg();
 //---- ВСЕ ОТКЛЮЧЕНО ------------------------------------------------------------------------------------------
-      else {
-        CN1 = OFF; CN2 = OFF; ElStat = OFF;
-#ifdef ELECTROSTAT 
-        TIMSK&=0xEF; // Compare A: Off; Compare B: On
-#endif
-      }// все отключено;  
+      else {CN1 = OFF; CN2 = OFF; ElStat = OFFmosfet; TIMSK=0x49;}// все отключено;  Compare A: Off;    
       if(waitStart) {LeftPrg(); if(--waitStart==0){LastProg=Program; if(Program>3) Program<<=4; nextPrg();}} 
       else if(mode==0) display();
      };

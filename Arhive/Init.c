@@ -12,12 +12,19 @@ DDRD=0x3F;// Func7=In Func6=In Func5=Out Func4=Out Func3=Out Func2=Out Func1=Out
 
 // Timer/Counter 0 initialization
 TCCR0=0x03;                             // Clock value: clk/64 Clock source: (Clock value: 62,500 kHz)
-#ifdef ELECTROSTAT
-// Timer/Counter 1 initialization
-TCCR1B=0x0B;// Mode: CTC top=OCR1A; Clock value: 62,500 kHz
-setOCRA(ocra1);
-setOCRB(ocrb1);
-#endif 
+if((timerElst[0]+timerElst[1]+timerElst[2])>9){
+    if(ocra1<100){
+      ocra1=3125;           // Clock value: 62500 kHz / 200 Hz = 312,5 = ocra1
+      ocrb1=156;            // Заполнение 50% ocra1 / 2 = 156 = ocrb1
+    }
+    // Timer/Counter 1 initialization
+    TCCR1B=0x0B;// Mode: CTC top=OCR1A; Clock value: 62,500 kHz
+    OCR1A =ocra1;
+    OCR1B =ocrb1;
+    pvTimer=1;               // для бысрого срабатывания функции electrostat()ж
+    wsElstat = timerElst[0]; // задержка старта
+    ModeElS=1;               // канал занят по электростатику
+} 
 // Timer/Counter 2 initialization
 TCCR2=0x05;                             // Clock value: clk/128 Clock source: (Clock value: 31,250 kHz)
 
@@ -27,11 +34,7 @@ TCCR2=0x05;                             // Clock value: clk/128 Clock source: (C
 MCUCR=0x00;
 
 // Timer(s)/Counter(s) Interrupt(s) initialization
-#ifdef ELECTROSTAT
 TIMSK=0x49; // TimerOVF0 - ON; TimerOVF2 - ON; Compare A Match Interrupt: Off; Compare B Match Interrupt: On
-#else
-TIMSK=0x41; // TimerOVF0 - ON; TimerOVF2 - ON; Compare A Match Interrupt: Off; Compare B Match Interrupt: Off
-#endif
 
 // Analog Comparator initialization
 ACSR=0x80;                              // Analog Comparator: Off
@@ -45,7 +48,7 @@ ADCSRA=0x86;                            // ADC Voltage Reference: AVCC pin
 
 w1_init();                              // 1 Wire Bus initialization
 ds18b20 = w1_search(0xf0,familycode);   // detect how many DS18b20 devices are connected to the 1 Wire bus
-ds18b20 &= 3;	                        // если датчиков много то оставляем только два
+if(ds18b20 > 3) ds18b20 = 3;	    // если датчиков много то оставляем только два
 if(ds18b20){displ_buffer[3]=digit[ds18b20]; w1_init(); w1_write(0xCC); w1_write(0x44);}// если датчики обнаружены - 1 Wire Bus initialization
 if(ds18b20 == 2) {if(Priority) permutation (0, 1);}
 else if(ds18b20 == 3)
@@ -78,15 +81,11 @@ if (ds18b20 < 3){
 
 BeepT=50;
 delay_ms(2000);
-#ifdef ELECTROSTAT
-  pvTimer=1;               // для бысрого срабатывания функции electrostat()ж
-  wsElstat = timerMain[0]; // задержка старта
-#endif
 maxUser = MAXUSER0;
 maxOwner = MAXOWNER0;
 if(Timer && ds18b20)
  {
-  ElStat=OFF; InsideHeatON=ON; Heat=ON; BeepT=255;
+  ElStat=OFFmosfet; InsideHeatON=ON; Heat=ON; BeepT=255;
   if(SpTmr[Step]){countsec=59; countmin=59; counthum=0;}
   else {ToInsideHeat=ON; countsec=0;}  // устанавливаем отсчет по температуре продукта.
  }

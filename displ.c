@@ -119,7 +119,7 @@ void display()
      else if(ToInsideHeat)  // если отсчет по температуре продукта.
      { 
        dispLEFT(pvT[0],0);
-       if(ElStat == ONmosfet) dispRIGHT(Timer,4);
+       if(ElStat == ON) dispRIGHT(Timer,4);
        else if(Timer) dispRIGHT(Timer,1);
        else dispRIGHT(countsec,0);
      }
@@ -129,7 +129,7 @@ void display()
         else
          {
            dispLEFT(pvT[0],0);
-           if(ElStat == ONmosfet) dispRIGHT(Timer,4);
+           if(ElStat == ON) dispRIGHT(Timer,4);
            else if(Timer) dispRIGHT(Timer,Dim);
            else dispRIGHT(countsec,Dim);
          }

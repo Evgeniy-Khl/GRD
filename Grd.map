@@ -1,0 +1,75 @@
+RAM Allocation
+Variable                                                          Address   Size
+--------------------------------------------------------------------------------
+waitkey                                                           0x0160       1
+counthum                                                          0x0161       1
+BeepT                                                             0x0162       1
+lock                                                              0x0163       1
+InsideHeatON                                                      0x0164       1
+errors                                                            0x0165       1
+maxUser                                                           0x0166       1
+maxOwner                                                          0x0167       1
+displ_buffer                                                      0x0168       6
+familycode                                                        0x016E      27
+wait                                                              0x0189       3
+waitStart                                                         0x018C       1
+countsec                                                          0x018D       1
+countmin                                                          0x018E       1
+pvT                                                               0x018F       6
+pvT0                                                              0x0195       2
+buf                                                               0x0197       2
+pwTriac0                                                          0x0199       1
+data                                                              0x019A       8
+lost                                                              0x01A2       1
+pvRH                                                              0x01A3       1
+key                                                               0x01A4       1
+count                                                             0x01A5       1
+iPart                                                             0x01A6       4
+
+EEPROM Allocation
+Variable                                                          Address   Size
+--------------------------------------------------------------------------------
+spT1                                                              0x0000       8
+spT2                                                              0x0008       8
+spT3                                                              0x0010       8
+SpTmr                                                             0x0018       8
+timeCool                                                          0x0020       4
+maxSP                                                             0x0024       2
+OvHeat                                                            0x0026       1
+Hyst                                                              0x0027       1
+Step                                                              0x0028       1
+Program                                                           0x0029       1
+LastProg                                                          0x002A       1
+Timer                                                             0x002B       2
+DimTmr                                                            0x002D       1
+Dim                                                               0x002E       1
+Humid                                                             0x002F       2
+HumMin                                                            0x0031       1
+Priority                                                          0x0032       1
+rider                                                             0x0033       2
+ocra1                                                             0x0035       2
+ocrb1                                                             0x0037       2
+timerElst                                                         0x0039       6
+numPrg                                                            0x003F       1
+
+Register Allocation
+Variable                                                          Register  Size
+--------------------------------------------------------------------------------
+countled                                                          R5           1
+led                                                               R4           1
+counter                                                           R7           1
+counter1                                                          R6           1
+counter2                                                          R9           1
+keydata                                                           R8           1
+mode                                                              R11          1
+displ                                                             R10          1
+ds18b20                                                           R13          1
+waitmode                                                          R12          1
+SetUp                                                             R2.0      1bit
+Check                                                             R2.1      1bit
+Heat                                                              R2.2      1bit
+ToInsideHeat                                                      R2.3      1bit
+Cooling                                                           R2.4      1bit
+KeyDown                                                           R2.5      1bit
+Sensor                                                            R2.6      1bit
+ElStat                                                            R2.7      1bit

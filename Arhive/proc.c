@@ -47,20 +47,17 @@ char temperature_check(void)
 
 void startPrg(void)
 {
-  BeepT=255; InsideHeatON=ON; Heat=ON; Cooling=OFF; countsec=0; errors=0;
-#ifndef ELECTROSTAT
-  counthum=timerHum[0];
-#endif  
+  BeepT=255; InsideHeatON=ON; Heat=ON; Cooling=OFF; countsec=0; counthum=Humid[0]; errors=0;
   if(SpTmr[Step]){Timer=SpTmr[Step]; countsec=59; countmin=59; counthum=0; Dim=DimTmr; ToInsideHeat=OFF;}
   else {ToInsideHeat=ON; countsec=0; Timer=0; Dim=0;}
 }
-#ifdef ELECTROSTAT
-void electrostat(void) // [TIM1_COMPA (0x10)] CN3 = ONmosfet;    [TIM1_COMPB (0x08)] CN3 = OFFmosfet;   [1]-работа; [2]-пауза;
+
+void electrostat(void) // [TIM1_COMPA (0x10)] CN4 = ONmosfet;    [TIM1_COMPB (0x08)] CN4 = OFFmosfet;   [1]-работа; [2]-пауза;
 {
-  if(ElStat==ON){if(--pvTimer==0) {pvTimer=timerMain[2]; ElStat = OFF; TIMSK&=0xEF;}}// TimerOVF0-On; TimerOVF2-On; Compare A: Off; Compare B: On
-  else {if(--pvTimer==0) {pvTimer=timerMain[1]; ElStat = ON; TIMSK|=0x10;}};// TimerOVF0-On; TimerOVF2-On; Compare A: On; Compare B: On
+  if(ElStat==ONmosfet){if(--pvTimer==0) {pvTimer=timerElst[2]; ElStat = OFFmosfet; TIMSK&=0xEF;}}// TimerOVF0-On; TimerOVF2-On; Compare A: Off; Compare B: On
+  else {if(--pvTimer==0) {pvTimer=timerElst[1]; ElStat = ONmosfet; TIMSK|=0x10;}};// TimerOVF0-On; TimerOVF2-On; Compare A: On; Compare B: On
 }
-#endif
+
 void nextPrg(void)
 {
  switch (Program)

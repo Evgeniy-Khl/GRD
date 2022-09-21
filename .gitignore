@@ -1,8 +1,11 @@
+.gitignore
+Arhive/
 Debug/
 Exe/
 Linker/
 List/
 Obj/
+111.*
 *.c~
 *.cbi
 *.cof

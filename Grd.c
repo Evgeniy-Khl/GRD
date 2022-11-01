@@ -6,8 +6,8 @@ PCB                 : RKlimat2021
 Clock frequency     : 4,000000 MHz
 
 *****************************************************/ 
-//#define GRD_001    // ГРД-1 сушильная камера DS18B20 + AM2301 + УВЛАЖНИТЕЛЬ: Program size: 4007 words (8014 bytes), 97,8% of FLASH [0x0AA2] EEPROM [0х0557] 04.04.2022
-#define GRD_002    // ГРД-1 сушильная камера DS18B20 + AM2301 + ЕЛЕКТРОСТАТИКА: Program size: 4060 words (8120 bytes), 99,1% of FLASH [0x6549] EEPROM [0x0782] 09.08.2022
+#define GRD_001    // ГРД-1 сушильная камера DS18B20 + AM2301 + УВЛАЖНИТЕЛЬ: Program size: 4007 words (8014 bytes), 97,8% of FLASH [0x0AA2] EEPROM [0х0557] 01.11.2022
+//#define GRD_002    // ГРД-1 сушильная камера DS18B20 + AM2301 + ЕЛЕКТРОСТАТИКА: Program size: 4060 words (8120 bytes), 99,1% of FLASH [0x6549] EEPROM [0x0782] 09.08.2022
 
 #include "brend.h"
 #include <mega8.h>
@@ -106,7 +106,7 @@ eeprom unsigned char timeCool[4]={0,0,2,3};           // Длительность продувки
 #ifdef ELECTROSTAT
   eeprom signed int maxSP[4]={35,130,130,130};        // Ограничитель максимальной температуры
 #else
-  eeprom signed int maxSP[4]={130,130,130,130};       // Ограничитель максимальной температуры
+  eeprom signed int maxSP=130;       // Ограничитель максимальной температуры
 #endif
 eeprom unsigned char OvHeat=8,Hyst=5,Step=0;          // Тревога; Гистерезис; Шаг программы;
 eeprom unsigned char Program=0, LastProg=1;           // Выполняемая программа, прошлая программа;
